@@ -65,7 +65,7 @@ Date.prototype.fromMySQL = function(dateStr) {
 }
 
 function SyncRequestRetry() {
-    this.retries = 10;
+    this.retries = 100;
 
     this.getJSON = function(url) {
         var ok = false;
@@ -119,7 +119,11 @@ function Loader() {
             measurements = measurementsA[1];
             kmax = measurementsA[0];
 
-            sensors.push({'phenomenon': phenomenon, 'uom': uom, 'start': start, 'end': end, 'profile': measurements, 'max': kmax });
+            // get sensor suffix
+            var posN = sensorsData[j].Name.lastIndexOf("-");
+            var suffix = sensorsData[j].Name.substr(posN, sensorsData[j].Name.length);
+
+            sensors.push({'phenomenon': phenomenon, 'uom': uom, 'suffix': suffix, 'start': start, 'end': end, 'profile': measurements, 'max': kmax });
         }
 
         this.nodes.push({ 'name': name, 'sensors': sensors });

@@ -1,5 +1,8 @@
 var jsonfile = require('jsonfile');
 
+var mqtt = require('mqtt')
+var client  = mqtt.connect('mqtt://localhost')
+
 function Simulator() {
     this.n = 0;
     this.val = [];
@@ -7,6 +10,8 @@ function Simulator() {
     this.init = function(name, interval, sm) {
         this.name = name;
         this.sm = sm;
+        this.lat = Math.random() + 45.5;
+        this.lng = Math.random() + 14.0;
         this.interval = interval;
         this.smN = sm.length;
         this.nodeid = Math.floor((Math.random() * this.smN));
@@ -32,9 +37,33 @@ function Simulator() {
         this.propagate();
     }
 
+    this.generateJSON = function() {
+        var measurements = [];
+
+        for (i = 0; i < this.sm[this.nodeid].sensors.length; i++) {
+            var sensor = this.sm[this.nodeid].sensors[i];
+
+            // type
+            var typename = sensor.name;
+            var type = { "id": typename, "name": typename, "phenomenon": sensor.phenomenon, "UoM": sensor.uom };
+
+            // sensor
+            var sensorname = this.name +  "-" + sensor.phenomenon;
+
+            var measurement = { "sensorid": sensorname, "value": this.val[i], "timestamp": this.timestamp, "type": type }
+
+            measurements.push(measurement);
+        }
+
+        var node = [{ "id": this.name, "name": this.name, "lat": this.lat, "lng": this.lng, "measurements": measurements }];
+        return node;
+    }
 
     this.propagate = function() {
         console.log(this.name + "#" + this.n, this.val, this.timestamp);
+        var data = this.generateJSON();
+        var dataJSON = JSON.stringify(data);
+        client.publish('stream', dataJSON);
         var _this = this;
         this.timeout = setTimeout(function() { _this.nextMeasurement(); }, this.interval);
     }
@@ -50,7 +79,7 @@ function SimulatorManager() {
 
     this.addSimulators = function() {
         // console.log(_this.simulators);
-        for (var i = 1; i < 10000; i++) {
+        for (var i = 1; i < 40000; i++) {
             this.addSimulator(this, "node" + i);
         }
     }
